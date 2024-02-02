@@ -17,3 +17,9 @@ allairtemps <- allairtemps %>%
 #filters the stream temperatures hourly
 streamtemps <- StreamTemp %>%
   filter(format(TIMESTAMP, "%M") == "00")
+
+prac <- allairtemps |> 
+  group_by(STA) |> 
+  pivot_wider(names_from = STA, values_from = airTemp)
+
+test <- left_join(streamtemps, prac, by = c("TIMESTAMP" = "DateTime"))
