@@ -44,5 +44,7 @@ datasetrenamed <- rename(alldata,c('StreamTemp'='value', 'AirTemp'='airTemp'))
 dataset <- select(datasetrenamed, -streamtemps)  %>%
 filter(between(TIMESTAMP,as.Date('2015-05-19'),as.Date('2022-09-12')))
 
+write_csv(dataset,"combinedData.csv")
+
 
 
