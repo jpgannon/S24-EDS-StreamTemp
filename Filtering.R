@@ -41,7 +41,8 @@ alldata <- left_join(tempscombined, allairtemps, by=c('TIMESTAMP'='DateTime', 's
 
 #renames columns and drops extra column
 datasetrenamed <- rename(alldata,c('StreamTemp'='value', 'AirTemp'='airTemp')) 
-dataset <- select(datasetrenamed, -streamtemps)
+dataset <- select(datasetrenamed, -streamtemps)  %>%
+filter(between(TIMESTAMP,as.Date('2015-05-19'),as.Date('2022-09-12')))
 
 
 
