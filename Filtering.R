@@ -1,20 +1,29 @@
 library(dplyr)
 library(tidyverse)
 
-#reads in data
-STA1Air <- read_csv("HBEF_STA1airTemp_15min.csv")
-STA23Air <- read_csv("HBEF_STA23AirTemp_15min.csv")
-StreamTemp <- read_csv("HBEF_streamtemp_roughlyCleaned.csv")
+#Set personal working directory
+#setwd("C:/EDS Capstone 2024/2024_VTCapstone_Diel/200_Data/RAW_data")
 
-#combines the two air temperatures into one and deletes the extra column
+#Download Data
+STA1Air <- read.csv("HBEF_STA1airTemp_15min.csv")
+STA23Air <- read.csv("HBEF_STA23airTemp_15min.csv")
+StreamTemp <- read.csv("HBEF_streamtemp_roughlyCleaned.csv")
+
+#Combines the two air temperature files into one and deletes the extra column 
 allairtemps <- bind_rows(STA1Air, STA23Air)
 allairtemps <- select(allairtemps,-FLAG)
 
-#filters the air temperatures hourly
+#Formats the datetime for air temp correctly
+allairtemps$DateTime <- as.POSIXct(allairtemps$DateTime, format = "%Y-%m-%d %H:%M:%S")
+
+#Filters the air temperature file hourly
 allairtemps <- allairtemps %>%
   filter(format(DateTime, "%M") == "00")
 
-#filters the stream temperatures hourly
+#Formates the datetime for streams correctly 
+StreamTemp$TIMESTAMP <- as.POSIXct(StreamTemp$TIMESTAMP, format = "%Y-%m-%d %H:%M:%S")
+
+#Filters the stream temperature file hourly 
 streamtemps <- StreamTemp %>%
   filter(format(TIMESTAMP, "%M") == "00")
 
@@ -33,3 +42,6 @@ alldata <- left_join(tempscombined, allairtemps, by=c('TIMESTAMP'='DateTime', 's
 #renames columns and drops extra column
 datasetrenamed <- rename(alldata,c('StreamTemp'='value', 'AirTemp'='airTemp')) 
 dataset <- select(datasetrenamed, -streamtemps)
+
+
+
