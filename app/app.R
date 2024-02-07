@@ -10,51 +10,57 @@ library(shiny)
 library(shinythemes)
 library(tidyverse)
 library(lubridate)
-library(plotly)
-library(leaflet)
-library(sf)
-library(rtop)
-library(shiny)
 
 
-start <- ymd("2015-19-05")
-end <- ymd("2022-12-08")
+end <- ymd("2022-08-12")
+start <- ymd("2015-05-19")
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-
-    # Application title
-    titlePanel("Air Temperature effects on Water Stream"),
-
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot")
-        )
+  
+  # Application title
+  
+  titlePanel("Stream VS Air Temperature Data"),
+  
+  
+  # Sidebar with a slider input for number of bins 
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("gage", "Select a stream location",
+                  choices = c(unique(dataset$Location)), 
+                  selected = dataset$Location[1]),
+      dateRangeInput("dates",
+                     "Run analysis for these dates",
+                     start = start, end = end,
+                     min = start, max = end)
+    ),
+    
+    # Show a plot of the generated distribution
+    mainPanel(
+      tabsetPanel(type = "tabs", 
+                  tabPanel("Introduction", 
+                           h4("Welcome to our app...")),
+                  tabPanel("Data Visualization"), 
+                  tabPanel("Map View"), 
+                  tabPanel("Filtered Data")
+      )
     )
+  )
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white',
-             xlab = 'Waiting time to next eruption (in mins)',
-             main = 'Histogram of waiting times')
-    })
+  
+  output$distPlot <- renderPlot({
+    # generate bins based on input$bins from ui.R
+    x    <- faithful[, 2]
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    
+    # draw the histogram with the specified number of bins
+    hist(x, breaks = bins, col = 'darkgray', border = 'white',
+         xlab = 'Waiting time to next eruption (in mins)',
+         main = 'Histogram of waiting times')
+  })
 }
 
 # Run the application 
