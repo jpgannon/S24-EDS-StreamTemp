@@ -6,14 +6,24 @@
 #
 #    https://shiny.posit.co/
 #
-
+library(shiny)
+library(shinythemes)
+library(tidyverse)
+library(lubridate)
+library(plotly)
+library(leaflet)
+library(sf)
+library(rtop)
 library(shiny)
 
+
+start <- ymd("2015-19-05")
+end <- ymd("2022-12-08")
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
     # Application title
-    titlePanel("Old Faithful Geyser Data"),
+    titlePanel("Air Temperature effects on Water Stream"),
 
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
