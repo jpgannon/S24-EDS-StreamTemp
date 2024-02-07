@@ -18,20 +18,18 @@ allairtemps <- allairtemps %>%
 streamtemps <- StreamTemp %>%
   filter(format(TIMESTAMP, "%M") == "00")
 
+#combining the data sets
 tempscombined <- streamtemps %>%
-  pivot_longer(cols = starts_with("Streamtemp"),
-               names_to = 'Location') %>%
-  mutate(streamtemps = case_when(
-    Location = Streamtemp_W1 ~ STA_1,
-    Location = Streamtemp_W2 ~ STA_1,
-    Location = Streamtemp_W3 ~ STA_1,
-    Location = Streamtemp_W4 ~ STA_1,
-    Location = Streamtemp_W5 ~ STA_1,
-    Location = Streamtemp_W6 ~ STA_1,
-    Location = Streamtemp_W7 ~ STA_23,
-    Location = Streamtemp_W8 ~ STA_23,
-    Location = Streamtemp_W9 ~ STA_23
- )) %>%
-  join_by(TIMESTAMP == DateTime)
+  pivot_longer(cols = starts_with("Streamtemp_"),
+               names_to = "Location") %>%
+  mutate(streamtemps = case_when(    
+    Location %in% c("Streamtemp_W1", "Streamtemp_W2", "Streamtemp_W3", "Streamtemp_W4", "Streamtemp_W5", "Streamtemp_W6") ~ "STA_1",   
+    Location %in% c("Streamtemp_W7", "Streamtemp_W8", "Streamtemp_W9") ~ "STA_23"  
+  )) 
 
-    
+#joins data sets
+alldata <- left_join(tempscombined, allairtemps, by=c('TIMESTAMP'='DateTime', 'streamtemps'='STA'))
+
+#renames columns and drops extra column
+datasetrenamed <- rename(alldata,c('StreamTemp'='value', 'AirTemp'='airTemp')) 
+dataset <- select(datasetrenamed, -streamtemps)
