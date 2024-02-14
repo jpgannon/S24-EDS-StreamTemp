@@ -23,11 +23,11 @@ ui <- fluidPage(
   titlePanel("Stream VS Air Temperature Data"),
   
   
-  # Sidebar with a slider input for number of bins 
+  # Sidebar with a slider input for number of bins
   sidebarLayout(
     sidebarPanel(
       selectInput("gage", "Select a stream location",
-                  choices = c(unique(dataset$Location)), 
+                  choices = c(unique(dataset$Location)),
                   selected = dataset$Location[1]),
       dateRangeInput("dates",
                      "Run analysis for these dates",
@@ -37,12 +37,12 @@ ui <- fluidPage(
     
     # Show a plot of the generated distribution
     mainPanel(
-      tabsetPanel(type = "tabs", 
-                  tabPanel("Introduction", 
+      tabsetPanel(type = "tabs",
+                  tabPanel("Introduction",
                            h4("Welcome to our app...")),
-                  tabPanel("Data Visualization"), 
-                  tabPanel("Map View"), 
-                  tabPanel("Filtered Data", 
+                  tabPanel("Data Visualization", plotOutput("distPlot")),
+                  tabPanel("Map View"),
+                  tabPanel("Filtered Data",
                            dataTableOutput("data"))
       )
     )
@@ -52,10 +52,26 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
-  output$data <- renderDataTable(dataset, options = list(orderClasses = TRUE, 
-                                                         searchDelay = 500))
+  output$distPlot <- renderPlot({
+    # generate bins based on input$bins from ui.R)
+    filtered_data <- dataset %>%
+      filter(Location == input$gage,
+             TIMESTAMP >= input$dates[1],
+             TIMESTAMP <= input$dates[2]
+             
+      )
+    ggplot(filtered_data, aes(x = TIMESTAMP, y = StreamTemp, color = "StreamTemp")) +
+      geom_line() +
+      geom_line(aes(y = AirTemp, color = "AirTemp", alpha = 0.5)) +
+      labs(x = "TimeStamp", y = "Temperature (Cº)") +
+      scale_color_manual(values = c("StreamTemp" = "blue", "AirTemp" = "red")) +
+      theme_minimal()
     
+  })
+  output$data <- renderDataTable(dataset, options = list(orderClasses = TRUE,
+                                                         searchDelay = 500))
 }
 
-# Run the application 
+
+# Run the application
 shinyApp(ui = ui, server = server)
