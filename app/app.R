@@ -23,7 +23,8 @@ ui <- fluidPage(
   titlePanel("Stream VS Air Temperature Data"),
   
   
-  # Sidebar with a slider input for number of bins
+  # Sidebar with a drop down menu for location and a selectable calendar for 
+  # dates
   sidebarLayout(
     sidebarPanel(
       selectInput("gage", "Select a stream location",
@@ -39,8 +40,13 @@ ui <- fluidPage(
     mainPanel(
       tabsetPanel(type = "tabs",
                   tabPanel("Introduction",
-                           h4("Welcome to our app...")),
+                           h4("This app's function is to display stream and air 
+                              temperature data for different analyses. The data 
+                              is from the Hubbard Brook Experimental Forest. The
+                              hourly temperature data is from nine different 
+                              stream locations and two different air locations. ")),
                   tabPanel("Data Visualization", plotOutput("distPlot")),
+                  tabPanel("Data Analysis", dataTableOutput("calc")),
                   tabPanel("Map View"),
                   tabPanel("Filtered Data",
                            dataTableOutput("data"))
@@ -66,7 +72,6 @@ server <- function(input, output) {
       labs(x = "TimeStamp", y = "Temperature (Cº)") +
       scale_color_manual(values = c("StreamTemp" = "blue", "AirTemp" = "red")) +
       theme_minimal()
-    
   })
   output$data <- renderDataTable(dataset, options = list(orderClasses = TRUE,
                                                          searchDelay = 500))
