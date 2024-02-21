@@ -8,7 +8,11 @@
 #
 library(shiny)
 library(shinythemes)
+library(sf)
 library(tidyverse)
+library(readxl)
+library(plotly)
+library(leaflet)
 library(lubridate)
 
 
@@ -23,12 +27,11 @@ ui <- fluidPage(
   titlePanel("Stream VS Air Temperature Data"),
   
   
-  # Sidebar with a drop down menu for location and a selectable calendar for 
-  # dates
+  # Sidebar with a slider input for number of bins 
   sidebarLayout(
     sidebarPanel(
       selectInput("gage", "Select a stream location",
-                  choices = c(unique(dataset$Location)),
+                  choices = c(unique(dataset$Location)), 
                   selected = dataset$Location[1]),
       dateRangeInput("dates",
                      "Run analysis for these dates",
@@ -38,45 +41,80 @@ ui <- fluidPage(
     
     # Show a plot of the generated distribution
     mainPanel(
-      tabsetPanel(type = "tabs",
-                  tabPanel("Introduction",
-                           h4("This app's function is to display stream and air 
-                              temperature data for different analyses. The data 
-                              is from the Hubbard Brook Experimental Forest. The
-                              hourly temperature data is from nine different 
-                              stream locations and two different air locations. ")),
-                  tabPanel("Data Visualization", plotOutput("distPlot")),
-                  tabPanel("Data Analysis", dataTableOutput("calc")),
-                  tabPanel("Map View"),
-                  tabPanel("Filtered Data",
+      tabsetPanel(type = "tabs", 
+                  tabPanel("Introduction", 
+                           h4("Welcome to our app...")),
+                  tabPanel("Data Visualization",plotlyOutput("distPlot")), 
+                  tabPanel("Map View",
+                      leafletOutput("Map")),
+                  tabPanel("Filtered Data", 
                            dataTableOutput("data"))
       )
     )
   )
 )
 
+
+
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  
-  output$distPlot <- renderPlot({
+  output$distPlot <- renderPlotly({
+    
     # generate bins based on input$bins from ui.R)
+    
     filtered_data <- dataset %>%
       filter(Location == input$gage,
              TIMESTAMP >= input$dates[1],
-             TIMESTAMP <= input$dates[2]
-             
+             TIMESTAMP <= input$dates[2])
+    plot1 <- filtered_data %>%
+      plot_ly(x = ~ TIMESTAMP)
+    plot1 <- plot1 %>%
+      add_trace(
+        y = ~ StreamTemp,
+        name = 'Stream Temp (ºC)',
+        mode = 'lines',
+        line = list(size = 4)
       )
-    ggplot(filtered_data, aes(x = TIMESTAMP, y = StreamTemp, color = "StreamTemp")) +
-      geom_line() +
-      geom_line(aes(y = AirTemp, color = "AirTemp", alpha = 0.5)) +
-      labs(x = "TimeStamp", y = "Temperature (Cº)") +
-      scale_color_manual(values = c("StreamTemp" = "blue", "AirTemp" = "red")) +
-      theme_minimal()
+    plot1 <- plot1 %>%
+      add_trace(
+        y = ~ AirTemp,
+        name = 'Air Temp(ºC)',
+        mode = 'lines',
+        opacity = 0.7,
+        line = list(width = 2)
+      )
+    plot_1 <- plot1 %>%
+      layout(yaxis = list(title = "Temperature (Cº)"))
   })
-  output$data <- renderDataTable(dataset, options = list(orderClasses = TRUE,
-                                                         searchDelay = 500))
+  output$data <-
+    renderDataTable(dataset, options = list(orderClasses = TRUE,
+                                            searchDelay = 500))
+  
+
+# Map View Tab Astetics
+  #Import Lat Long Data 
+  watershed <- st_read("hbef_weirs.shp")
+  watersheds <- read_excel("watersheds.xlsx", sheet = 1)
+  
+output$Map <- renderLeaflet({
+  leaflet() %>%
+    addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
+    addMarkers(data = watersheds, 
+               lat = ~LAT, 
+               lng = ~LONG,
+               label = c('W1','W2','W3','W4','W5','W6','W7','W8','W9'),) %>%
+    setView(lat = mean(watersheds$LAT), 
+            lng = mean(watersheds$LONG),
+            zoom = 13.45)
+}) 
+
+#Select sites by clicking on them
+observeEvent(watersheds$Map_marker_click, {
+site <- watersheds$Map_marker_click
+siteID <- site$Location
+updateSelectInput(session, "gage", selected = siteID)
+  })
 }
 
-
-# Run the application
+# Run the application 
 shinyApp(ui = ui, server = server)
