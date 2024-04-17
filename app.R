@@ -78,7 +78,13 @@ ui <- fluidPage(
           ),
           p("Upload Data: This tab allows the user to download a copy of our cleaned data file, and add their own data. The user can then upload the new data file, and it will automatically add the new data to the calculations.")
         ),
-        tabPanel("Raw Time Series", plotlyOutput("distPlot") %>% withSpinner(color = "blue"), p("Dedicated Locations STA_1: Stream_w1 - Stream_w6, STA_23: Stream_w7 - Stream_w9")),
+        tabPanel("Raw Time Series", plotlyOutput("distPlot") %>% withSpinner(color = "blue"),
+                 p(strong("***NOTE***", style = "font-size: 14px;"),br(),
+                   span("Dedicated Locations -", style = "font-size: 16px;"), 
+                   br(),
+                   "(STA_1: Streamtemp_w1 - Streamtemp_w6)",
+                   br(),
+                   "(STA_23: Streamtemp_w7 - Streamtemp_w9)")),
         tabPanel(
           "Tabular Data",
           dataTableOutput("signalAnalysis"),
@@ -91,10 +97,10 @@ ui <- fluidPage(
           plotlyOutput("signalPhaseOffsetPlot") %>% withSpinner(color = "blue"),
           dataTableOutput("compareMetricsTable")
         ),
-        # tabPanel(
-        #   "Compare Metrics - Boxplots",
-        #   plotlyOutput("compareMetricsBoxplots") %>% withSpinner(color = "blue")
-        # ),
+        tabPanel(
+          "Compare Metrics - Boxplots",
+          plotlyOutput("compareMetricsBoxplots") %>% withSpinner(color = "blue")
+        ),
         tabPanel("Map View",
                  leafletOutput("Map") %>% withSpinner(color = "blue")),
         tabPanel(
@@ -156,12 +162,17 @@ server <- function(input, output) {
     }
   )
   
+  output$note_text <- renderText({
+    paste("[ STA (1 & 23) = Air Temp Station ]", "[ Streamtemp_W (1 - 9) = Water Temp Station]", sep = "\n")
+  })
+  
+  
   output$distPlot <-renderPlotly({
     
     #Output for raw time series tab
     #Generate bins based on input$bins from ui.R
     filtered_bind_data <- getTimeData() %>%
-      filter(STA == input$gage,
+      filter(STA %in% input$gage,
              DateTime >= input$dates[1],
              DateTime <= input$dates[2])
     
@@ -371,11 +382,61 @@ server <- function(input, output) {
   })
   
   #Output for the compare metrics - box plots tab
+  output$compareMetricsBoxplots <- renderPlotly({
+    filtered_data <- dataset %>%
+      filter(Location %in% input$gage,
+             TIMESTAMP >= input$dates[1],
+             TIMESTAMP <= input$dates[2]) %>%
+      mutate(Date = as.Date(TIMESTAMP))
+    
+    # Create a dataframe to hold computed metrics for plotting
+    metrics_data <- data.frame()
+    for (loc in input$gage) {
+      daily_data <- filtered_data %>%
+        filter(Location == loc) %>%
+        group_by(Date) %>%
+        summarize(
+          Signal_Mean = mean(StreamTemp) / mean(AirTemp),
+          Signal_Amplitude = mean(StreamTemp / AirTemp),
+          Signal_Phase_Offset = mean(StreamTemp - AirTemp),
+          Location = loc
+        )
+      metrics_data <- rbind(metrics_data, daily_data)
+    }
+    
+    # Plot using Plotly
+    p <- plot_ly(data = metrics_data, color = ~Location)
+    p <- add_trace(p, data = subset(metrics_data, select = c(Date, Signal_Mean, Location)), 
+                   y = ~Signal_Mean, type = 'box', name = "Signal Mean", 
+                   marker = list(color = 'blue'), line = list(color = 'blue'), boxpoints = 'all')
+    p <- add_trace(p, data = subset(metrics_data, select = c(Date, Signal_Amplitude, Location)), 
+                   y = ~Signal_Amplitude, type = 'box', name = "Signal Amplitude", 
+                   marker = list(color = 'green'), line = list(color = 'green'), boxpoints = 'all')
+    p <- add_trace(p, data = subset(metrics_data, select = c(Date, Signal_Phase_Offset, Location)), 
+                   y = ~Signal_Phase_Offset, type = 'box', name = "Signal Phase Offset", 
+                   marker = list(color = 'red'), line = list(color = 'red'), boxpoints = 'all')
+    
+    
+    p %>%
+      layout(
+        title = "Comparison of Signal Metrics",
+        margin = list(
+          l = 75,
+          r = 75,
+          b = 75,
+          t = 75
+        ),
+        yaxis = list(title = "Metric Values"),
+        xaxis = list(title = "Metric Type")
+      )
+  })
+  
   
   
   #Output for map view tab
   watershed <- st_read("hbef_weirs.shp")
   watersheds <- read_excel("watersheds.xlsx", sheet = 1)
+  AirStation <- read_excel("AirStationLocation.xlsx",sheet = 1)
   watershed_boundary <- st_read("hbef_wsheds.shp") %>% 
     filter(WS %in% c('WS1','WS2','WS3','WS4','WS5','WS6','WS7','WS8','WS9')) %>%
     st_transform(4326)
@@ -391,7 +452,7 @@ server <- function(input, output) {
                        color = "yellow",
                        opacity = 0.8,
                        fill = T,
-                       fillColor = 'red',
+                       fillColor = 'blue',
                        fillOpacity = 0.7,
                        label = c('\nW1 
                             \nSensor Elevation: 498 meters,
@@ -443,6 +504,29 @@ server <- function(input, output) {
                               'W8', 
                               'W9'),
                           labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE)) %>%
+      addCircleMarkers(data = AirStation, 
+                       lat = ~LAT, 
+                       lng = ~LONG,
+                       radius = 5,
+                       color = "yellow",
+                       opacity = 0.8,
+                       fill = T,
+                       fillColor = 'orange',
+                       fillOpacity = 0.7,
+                       label = c(     '\nA1
+                            \nSensor Elevation: 488 meters
+                            \nAspect: S',
+                                      '\nA23
+                            \nSensor Elevation 683 meters:
+                            \nAspect: NNE')) %>%
+      addLabelOnlyMarkers(data = AirStation, 
+                          lng = ~LONG, 
+                          lat = ~LAT, 
+                          label = 
+                            c('A1',
+                              'A23'),
+                          labelOptions = labelOptions(noHide = T,textOnly = T))%>%
+      
       
       setView(lat = mean(watersheds$LAT), 
               lng = mean(watersheds$LONG),
