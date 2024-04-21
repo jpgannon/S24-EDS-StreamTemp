@@ -1,3 +1,4 @@
+
 # This is a Shiny web application. You can run the application by clicking
 # the 'Run App' button above.
 #
@@ -22,103 +23,100 @@ start <- ymd("2015-05-19")
 
 options(shiny.maxRequestSize = 100 * 1024^2)
 
-#source("Filtering.R")
+source("Filtering.R")
 dataset <- read_csv("combinedData.csv")
 bindedRows <- read_csv("bindedRows.csv")
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-  theme = shinytheme("yeti"),
+  theme = shinytheme("superhero"),
   # Application title
   titlePanel("Stream VS Air Temperature Data"),
   
-  # Sidebar with a slider input for number of bins
-  sidebarLayout(
-    sidebarPanel(
-      selectizeInput(
-        "gage",
-        "Select stream locations",
-        choices = unique(bindedRows$STA),
-        selected = bindedRows$STA[1],
-        multiple = TRUE
-      ),
-      dateRangeInput(
-        "dates",
-        "Run analysis for these dates",
-        start = start,
-        end = end,
-        min = start,
-        max = Sys.Date()
-      ),
+  # Sidebar with a slider input for number of bins  sidebarLayout(
+  sidebarPanel(
+    selectizeInput(
+      "gage",
+      "Select Stations",
+      choices = unique(bindedRows$STA),
+      selected = bindedRows$STA[1],
+      multiple = TRUE
     ),
-    
-    #Show a plot of the generated distribution
-    mainPanel(
-      tabsetPanel(
-        type = "tabs",
-        tabPanel(
-          "Introduction",
-          h4("Welcome to our app..."),
-          p("This app's function is to display stream and air temperature data for different analyses.
-                 The data is from the Hubbard Brook Experimental Forest. The hourly temperature data is from nine different stream locations and two different air locations."
-          ),
-          # p("A brief description of the research project this app is built for: Diel Paired Air-Stream Temperature Metrics Reveal Seasonal Patterns in Hydrologic Connectivity"
-          # ),
-          # p("A brief description of each tab:"),
-          p("Raw Time Series: This tab consists of one time series line graph. The graph visualizes the air temperature of STA_1 and STA_23 and stream temperature of 9 different locations. Since this is a time series graph as well, you can also manipulate the timeline to your own liking. This is very useful to compare and contrast the temperature from different locations. It can also visualize the effect of air temperature on stream temp on a timely basis. 
-"),
-          p("Tabular Data: This tab has the three metrics (Signal Mean, Signal Amplitude, Signal Phase Offset) in a dataset format. Signal Mean is calculated by the mean stream temperature divided by the mean air temperature. Signal Amplitude is calculated by the mean of the stream temperature divided by the air temperature. Signal Phase Offset is calculated by the mean of the stream temperature minus the air temperature."
-          ),
-          p("Compare Metrics - Graphs: This tab displays the same information as the Tabular Data but in a graphical format per metric. For the Signal Mean graph the temperatures have been converted to Kelvin before dividing to eliminate negative air temperature values. This graph also has been filtered to only display values < 1.05 to remove anomalous values. For all three graphs a rolling mean of 7 days has been used."
-          ),
-          p("Compare Metrics - Box Plots:"),
-          p("Map View: This interactive tab displays the point location of each stream temperature sensor and its corresponding watershed boundary within Hubbard Brook."
-          ),
-          p("Filtered Data: This tab displays all of the data we have utilized in all the other tabs."
-          ),
-          p("Upload Data: This tab allows the user to download a copy of our cleaned data file, and add their own data. The user can then upload the new data file, and it will automatically add the new data to the calculations.")
+    dateRangeInput(
+      "dates",
+      "Run analysis for these dates",
+      start = start,
+      end = end,
+      min = start,
+      max = Sys.Date()
+    ),
+    p(strong("Disclaimer", style = "font-size: 18px;"),br(),
+      span("To conduct analysis please use:", style = "font-size: 16px;"), 
+      br(),
+      "STA_1 with Streamtemp_W1 - Streamtemp_W6",
+      br(),
+      "STA_23 with Streamtemp_W7 - Streamtemp_W9",
+    )
+  ),
+  
+  #Show a plot of the generated distribution
+  mainPanel(
+    tabsetPanel(
+      type = "tabs",
+      tabPanel(
+        "Introduction",
+        h4("Welcome to our app!"),
+        p("Determining stream-hillslope connectivity provides an important context for understanding watershed biogeochemical fluxes and aquatic biologic resilience, especially for cold water fishes. In addition to other hillslope hydrologic methods, diel-paired stream and air temperature signals can inform spatial-temporal patterns of stream-hillslope connectivity. This new method utilizes temperature data, which is widely available and accessible, to calculate three simple daily metrics: amplitude ratio, phase lag and mean ratio. At the most basic level, the method relies on determining how the daily coupling of stream temperature and air temperature change over the year to inform the relative strength of groundwater-contributed waters (poorly coupled) to run-off and through-flow dominated (better coupled) times of the year. Notably, as the stream temperature is a non-conservative tracer, this method allows for the isolation of hydrologic dynamics at the km scale rather than an accumulative effect from upgradient processes." ),
+        p("Created by: Robert Powell, Patrick Walsh, Nil Barua, Haley Crowder in collaboration with Dr. Hare")
+      ),
+      tabPanel("Raw Time Series", plotlyOutput("distPlot") %>% withSpinner(color = "blue"),
+               p("Raw Time Series: This tab consists of one time series line graph. The graph visualizes the air temperature of STA_1 and STA_23 and stream temperature of 9 different locations. Since this is a time series graph as well, you can also manipulate the timeline to your own liking. This is very useful to compare and contrast the temperature from different locations. It can also visualize the effect of air temperature on stream temp on a timely basis.")
+      ),
+      tabPanel(
+        "Tabular Data",
+        p("Tabular Data: This tab has the three metrics (Signal Mean, Signal Amplitude, Signal Phase Offset) in a dataset format. Signal Mean is calculated by the mean stream temperature divided by the mean air temperature. Signal Amplitude is calculated by the mean of the stream temperature divided by the air temperature. Signal Phase Offset is calculated by the mean of the stream temperature minus the air temperature."
         ),
-        tabPanel("Raw Time Series", plotlyOutput("distPlot") %>% withSpinner(color = "blue"),
-                 p(strong("***NOTE***", style = "font-size: 14px;"),br(),
-                   span("Dedicated Locations -", style = "font-size: 16px;"), 
-                   br(),
-                   "(STA_1: Streamtemp_w1 - Streamtemp_w6)",
-                   br(),
-                   "(STA_23: Streamtemp_w7 - Streamtemp_w9)")),
-        tabPanel(
-          "Tabular Data",
-          dataTableOutput("signalAnalysis"),
-          downloadButton("downloadData", "Download Data")
+        dataTableOutput("signalAnalysis"),
+        downloadButton("downloadData", "Download Data")
+        
+      ),
+      tabPanel(
+        "Compare Metrics - Graphs",
+        p("Compare Metrics - Graphs: This tab displays the same information as the Tabular Data but in a graphical format per metric. For the Signal Mean graph the temperatures have been converted to Kelvin before dividing to eliminate negative air temperature values. This graph also has been filtered to only display values < 1.05 to remove anomalous values."
         ),
-        tabPanel(
-          "Compare Metrics - Graphs",
-          plotlyOutput("signalMeanPlot") %>% withSpinner(color = "blue"),
-          plotlyOutput("signalAmplitudePlot") %>% withSpinner(color = "blue"),
-          plotlyOutput("signalPhaseOffsetPlot") %>% withSpinner(color = "blue"),
-          dataTableOutput("compareMetricsTable")
+        plotlyOutput("signalMeanPlot") %>% withSpinner(color = "blue"),
+        plotlyOutput("signalAmplitudePlot") %>% withSpinner(color = "blue"),
+        plotlyOutput("signalPhaseOffsetPlot") %>% withSpinner(color = "blue"),
+        dataTableOutput("compareMetricsTable")
+      ),
+      tabPanel(
+        "Compare Metrics - Boxplots",
+        p("Compare Metrics - Box Plots: This tab displays the same information as the tabular data and graphs tab but in boxplot format. This helps to analyze trends."),
+        plotlyOutput("signalMeanBoxPlot") %>% withSpinner(color = "blue"),
+        plotlyOutput("signalAmplitudeBoxPlot") %>% withSpinner(color = "blue"),
+        plotlyOutput("signalPhaseOffsetBoxPlot") %>% withSpinner(color = "blue")
+      ),
+      tabPanel("Map View",
+               leafletOutput("Map") %>% withSpinner(color = "blue"),
+               p("Map View: This interactive tab displays the point location of each stream temperature sensor and its corresponding watershed boundary within Hubbard Brook."
+               )),
+      tabPanel(
+        "Filtered Data",
+        p("Filtered Data: This tab displays all of the data we have utilized in all the other tabs."
         ),
-        tabPanel(
-          "Compare Metrics - Boxplots",
-          plotlyOutput("compareMetricsBoxplots") %>% withSpinner(color = "blue")
-        ),
-        tabPanel("Map View",
-                 leafletOutput("Map") %>% withSpinner(color = "blue")),
-        tabPanel(
-          "Filtered Data",
-          dataTableOutput("data"),
-          downloadButton("downloadFiltredData", "Download Data")),
-        tabPanel("Upload Data", 
-                 h4("Click the button below to download the data file.
+        dataTableOutput("data"),
+        downloadButton("downloadFiltredData", "Download Data")),
+      tabPanel("Upload Data", 
+               p("Click the button below to download the data file.
                         Add your data to the bottom this sheet and then reupload as a CSV
                         using the upload button below.(Follow the format that is on the sheet)"),
-                 downloadButton("downloadTimeTemplate","Download Data File for Time Series"),
-                 downloadButton("downloadMetricsTemplate", "Download Data File for Calculating Metrics"),
-                 fileInput("UserData", "Upload updated metric data by clicking browse below"),
-                 fileInput("UserTimeData", "Upload updated time data by clicking browse below"),
-                 accept = c("text/csv",
-                            "text/comma-separated-values/text/plain",
-                            ".csv"))
-      )
+               downloadButton("downloadTimeTemplate","Download Data File for Time Series"),
+               downloadButton("downloadMetricsTemplate", "Download Data File for Calculating Metrics"),
+               fileInput("UserData", "Upload updated metric data by clicking browse below"),
+               fileInput("UserTimeData", "Upload updated time data by clicking browse below"),
+               accept = c("text/csv",
+                          "text/comma-separated-values/text/plain",
+                          ".csv"))
     )
   )
 )
@@ -130,7 +128,7 @@ server <- function(input, output) {
   getMetricData <- reactive({
     if (is.null(input$UserData)) {
       return(dataset)
-   } else {
+    } else {
       uploaded_data <- read_csv(input$UserData$datapath)
       return(uploaded_data)
     }
@@ -169,6 +167,7 @@ server <- function(input, output) {
   
   output$distPlot <-renderPlotly({
     
+    
     #Output for raw time series tab
     #Generate bins based on input$bins from ui.R
     filtered_bind_data <- getTimeData() %>%
@@ -195,7 +194,7 @@ server <- function(input, output) {
             name = paste('Air Temp (ºC) -', location),
             type = 'scatter',
             mode = 'lines',
-            line = list(width = 1.5),
+            line = list(width = 1.5, color = 'orange'),
             opacity = 0.6
           )
       } else {
@@ -215,6 +214,12 @@ server <- function(input, output) {
     
     plot_1 <- plot1 %>%
       layout(title = "Temperature Line Graph",
+             margin = list(
+               l = 75,
+               r = 75,
+               b = 75,
+               t = 75
+             ),
              yaxis = list(title = "Temperature (Cº)"),
              xaxis = list(title = "Time Stamp (yearly)"))
     
@@ -253,7 +258,6 @@ server <- function(input, output) {
     }
   )
   
-  
   #Outputs for compare metrics - graphs tab
   
   #Signal Mean Plot
@@ -266,6 +270,7 @@ server <- function(input, output) {
     
     plot <- plot_ly()
     
+    # Signal Mean in Kelvin
     for (loc in input$gage) {
       daily_data <- filtered_data %>%
         filter(Location == loc) %>%
@@ -382,53 +387,129 @@ server <- function(input, output) {
   })
   
   #Output for the compare metrics - box plots tab
-  output$compareMetricsBoxplots <- renderPlotly({
+  # Signal Mean Box Plot
+  output$signalMeanBoxPlot <- renderPlotly({
     filtered_data <- dataset %>%
       filter(Location %in% input$gage,
              TIMESTAMP >= input$dates[1],
              TIMESTAMP <= input$dates[2]) %>%
       mutate(Date = as.Date(TIMESTAMP))
     
-    # Create a dataframe to hold computed metrics for plotting
-    metrics_data <- data.frame()
-    for (loc in input$gage) {
-      daily_data <- filtered_data %>%
-        filter(Location == loc) %>%
-        group_by(Date) %>%
-        summarize(
-          Signal_Mean = mean(StreamTemp) / mean(AirTemp),
-          Signal_Amplitude = mean(StreamTemp / AirTemp),
-          Signal_Phase_Offset = mean(StreamTemp - AirTemp),
-          Location = loc
-        )
-      metrics_data <- rbind(metrics_data, daily_data)
+    # Calculate Signal Mean in Kelvin and filter
+    metrics_data <- filtered_data %>%
+      group_by(Location, Date) %>%
+      summarize(Signal_Mean = mean((StreamTemp) + 273.15) / mean((AirTemp) + 273.15),
+                .groups = 'drop') %>%
+      filter(Signal_Mean < 1.05)
+    
+    # Plot setup
+    plot <- plot_ly()
+    
+    # Track locations to manage legend entries
+    shown_legend <- c()
+    
+    for (loc in unique(metrics_data$Location)) {
+      loc_data <- filter(metrics_data, Location == loc)
+      plot <- add_trace(plot,
+                        data = loc_data,
+                        y = ~Signal_Mean,
+                        x = ~Location,
+                        type = 'box',
+                        name = loc,
+                        boxpoints = 'all',
+                        showlegend = !loc %in% shown_legend)
+      if (!loc %in% shown_legend) {
+        shown_legend <- c(shown_legend, loc)  # Update shown locations
+      }
     }
     
-    # Plot using Plotly
-    p <- plot_ly(data = metrics_data, color = ~Location)
-    p <- add_trace(p, data = subset(metrics_data, select = c(Date, Signal_Mean, Location)), 
-                   y = ~Signal_Mean, type = 'box', name = "Signal Mean", 
-                   marker = list(color = 'blue'), line = list(color = 'blue'), boxpoints = 'all')
-    p <- add_trace(p, data = subset(metrics_data, select = c(Date, Signal_Amplitude, Location)), 
-                   y = ~Signal_Amplitude, type = 'box', name = "Signal Amplitude", 
-                   marker = list(color = 'green'), line = list(color = 'green'), boxpoints = 'all')
-    p <- add_trace(p, data = subset(metrics_data, select = c(Date, Signal_Phase_Offset, Location)), 
-                   y = ~Signal_Phase_Offset, type = 'box', name = "Signal Phase Offset", 
-                   marker = list(color = 'red'), line = list(color = 'red'), boxpoints = 'all')
+    plot %>%
+      layout(title = "Signal Mean Box Plot",
+             margin = list(l = 75, r = 75, b = 75, t = 75),
+             yaxis = list(title = "Signal Mean (Kelvin)"),
+             xaxis = list(title = "Location"))
+  })
+  
+  # Signal Amplitude Box Plot
+  output$signalAmplitudeBoxPlot <- renderPlotly({
+    filtered_data <- dataset %>%
+      filter(Location %in% input$gage,
+             TIMESTAMP >= input$dates[1],
+             TIMESTAMP <= input$dates[2]) %>%
+      mutate(Date = as.Date(TIMESTAMP))
     
+    metrics_data <- filtered_data %>%
+      group_by(Location, Date) %>%
+      summarize(Signal_Amplitude = mean(StreamTemp / AirTemp),
+                .groups = 'drop') 
     
-    p %>%
-      layout(
-        title = "Comparison of Signal Metrics",
-        margin = list(
-          l = 75,
-          r = 75,
-          b = 75,
-          t = 75
-        ),
-        yaxis = list(title = "Metric Values"),
-        xaxis = list(title = "Metric Type")
-      )
+    # Plot setup
+    plot <- plot_ly()
+    
+    # Track locations to manage legend entries
+    shown_legend <- c()
+    
+    for (loc in unique(metrics_data$Location)) {
+      loc_data <- filter(metrics_data, Location == loc)
+      plot <- add_trace(plot,
+                        data = loc_data,
+                        y = ~Signal_Amplitude,
+                        x = ~Location,
+                        type = 'box',
+                        name = loc,
+                        boxpoints = 'all',
+                        showlegend = !loc %in% shown_legend)
+      if (!loc %in% shown_legend) {
+        shown_legend <- c(shown_legend, loc)  # Update shown locations
+      }
+    }
+    
+    plot %>%
+      layout(title = "Signal Amplitude Box Plot",
+             margin = list(l = 75, r = 75, b = 75, t = 75),
+             yaxis = list(title = "Signal Amplitude"),
+             xaxis = list(title = "Location"))
+  })
+  
+  # Signal Phase Offset Box Plot
+  output$signalPhaseOffsetBoxPlot <- renderPlotly({
+    filtered_data <- dataset %>%
+      filter(Location %in% input$gage,
+             TIMESTAMP >= input$dates[1],
+             TIMESTAMP <= input$dates[2]) %>%
+      mutate(Date = as.Date(TIMESTAMP))
+    
+    metrics_data <- filtered_data %>%
+      group_by(Location, Date) %>%
+      summarize(Signal_Phase_Offset = mean(StreamTemp - AirTemp),
+                .groups = 'drop')
+    
+    # Plot setup
+    plot <- plot_ly()
+    
+    # Track locations to manage legend entries
+    shown_legend <- c()
+    
+    for (loc in unique(metrics_data$Location)) {
+      loc_data <- filter(metrics_data, Location == loc)
+      plot <- add_trace(plot,
+                        data = loc_data,
+                        y = ~Signal_Phase_Offset,
+                        x = ~Location,
+                        type = 'box',
+                        name = loc,
+                        boxpoints = 'all',
+                        showlegend = !loc %in% shown_legend)
+      if (!loc %in% shown_legend) {
+        shown_legend <- c(shown_legend, loc)  # Update shown locations
+      }
+    }
+    
+    plot %>%
+      layout(title = "Signal Phase Offset Box Plot",
+             margin = list(l = 75, r = 75, b = 75, t = 75),
+             yaxis = list(title = "Signal Phase Offset"),
+             xaxis = list(title = "Location"))
   })
   
   
@@ -571,11 +652,8 @@ server <- function(input, output) {
   
 }
 
-#Upload data tab
-
-
-
 # Run the application
 shinyApp(ui = ui, server = server)
+
 
 
