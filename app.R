@@ -27,7 +27,7 @@ source("Filtering.R")
 dataset <- read_csv("combinedData.csv")
 bindedRows <- read_csv("bindedRows.csv")
 
-# Define UI for application that draws a histogram
+# Define UI for application
 ui <- fluidPage(
   theme = shinytheme("superhero"),
   # Application title
@@ -59,7 +59,7 @@ ui <- fluidPage(
     )
   ),
   
-  #Show a plot of the generated distribution
+  #Define tabs and add descriptions
   mainPanel(
     tabsetPanel(
       type = "tabs",
@@ -122,7 +122,7 @@ ui <- fluidPage(
 )
 
 
-# Define server logic required to draw a histogram
+# Define server logic
 server <- function(input, output) {
   
   getMetricData <- reactive({
@@ -169,7 +169,6 @@ server <- function(input, output) {
     
     
     #Output for raw time series tab
-    #Generate bins based on input$bins from ui.R
     filtered_bind_data <- getTimeData() %>%
       filter(STA %in% input$gage,
              DateTime >= input$dates[1],
@@ -204,7 +203,6 @@ server <- function(input, output) {
             data = location_data,
             x = ~DateTime,
             y = ~Temp,
-            #name = paste('Air Temp (ºC) -', input$gage[1]),
             name = paste('Stream Temp (ºC) -', location),
             mode = 'lines',
             line = list(dash = 'dot', width = 1.5)
@@ -515,6 +513,7 @@ server <- function(input, output) {
   
   
   #Output for map view tab
+  #Downloading data 
   watershed <- st_read("hbef_weirs.shp")
   watersheds <- read_excel("watersheds.xlsx", sheet = 1)
   AirStation <- read_excel("AirStationLocation.xlsx",sheet = 1)
@@ -522,6 +521,7 @@ server <- function(input, output) {
     filter(WS %in% c('WS1','WS2','WS3','WS4','WS5','WS6','WS7','WS8','WS9')) %>%
     st_transform(4326)
   
+  #Main Map Info
   output$Map <- renderLeaflet({
     leaflet() %>%
       addProviderTiles("OpenTopoMap", options = providerTileOptions(noWrap = TRUE)) %>%
@@ -534,9 +534,9 @@ server <- function(input, output) {
                        opacity = 0.8,
                        fill = T,
                        fillColor = 'blue',
-                       fillOpacity = 0.7,
+                       fillOpacity = 0.7, 
                        label = c('\nW1 
-                            \nSensor Elevation: 498 meters,
+                            \nSensor Elevation: 498 meters, 
                             \nAspect:SSE,
                             \nWatershed Area: 14.10 hectares',
                                  '\nW2 
@@ -614,7 +614,7 @@ server <- function(input, output) {
               zoom = 13.25)
   })
   
-  #Select sites by clicking on them
+  #Click on Map Marker
   observeEvent(watersheds$Map_marker_click, {
     site <- watersheds$Map_marker_click
     siteID <- site$Location
